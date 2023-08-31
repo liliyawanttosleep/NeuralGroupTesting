@@ -1,9 +1,10 @@
 #include<stdio.h>
 
-int testab()
+int testab(int a, int b)
 {
-	printf(4+1);
-	return 233;
+	a=1;
+	b=1;
+	return a+b;
 }
 
 int main()
