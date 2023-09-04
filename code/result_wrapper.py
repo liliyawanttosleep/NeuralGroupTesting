@@ -2,7 +2,7 @@ import numpy as np
 
 def generate_matrix(n, m):
     # Step 1: Generate a vector L of length n with corresponding probabilities
-    L = np.random.randint(1, 10000, n)  # Random integers for x_i
+    L = np.random.randint(1, 100000, n)  # Random integers for x_i
     p = np.random.uniform(0.0001, 0.9999, n)  # Random probabilities for p_i
     
     # Initialize the matrix with zeros
@@ -30,8 +30,8 @@ def generate_matrix(n, m):
     return matrix, metadata, M
 
 # Test the function
-n = 10000  # n should be greater than 40
-m = 1000  # Number of rows for the initial matrix
+n = 100000  # n should be greater than 40
+m = 5000  # Number of rows for the initial matrix
 
 matrix, metadata, M = generate_matrix(n, m)
 
@@ -88,7 +88,7 @@ def generate_matrix_M1(M, p, L, m):
     return matrix_M1, M1
 
 # Test the function with m > 20
-m = 500  # m should be greater than 20
+m = 1000  # m should be greater than 20
 
 # Generate the matrix M1 and set M1
 matrix_M1, M1 = generate_matrix_M1(M, metadata[1], metadata[0], m)
