@@ -852,7 +852,7 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
         # indices = torch.randperm( len(mixing_data_list), generator=torch.Generator().manual_seed(43)).tolist() # only for non-adaptive testing
 
         shuffled_mixing_data_list = np.array(mixing_data_list)[indices]
-        print("Tang: shuffled_mixing_data_list is {}\n".format( shuffled_mixing_data_list))
+        print("Tang00:shuffled_mixing_data_list content is {}\n".format( shuffled_mixing_data_list))
         assert len(shuffled_mixing_data_list) == len(mixing_data_list)
 
         ##################################
@@ -875,7 +875,7 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
         ).transpose((1, 0, 2))
         
         print("Tang: dataset_samples is {}\n".format(self.dataset_samples))
-        print("Tang：shuffled_mixing_data_list\n", self.dataset_samples.shape)
+        print("Tang: dataset sample shape is {}\n".format(self.dataset_samples.shape))
 
         # print("self.dataset_samples", self.dataset_samples.shape)
         # print("self.dataset_samples[:,x]", self.dataset_samples[:,37])
