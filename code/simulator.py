@@ -31,21 +31,20 @@ import random
 '''
 
 # Tang: You should modify the following paths accordingly
-dataset_path='F:/Summer_Project_Technion/Tasks/NeuralGroupTesting/data/dummy_group_testing_dataset'
+dataset_path = 'F:/Summer_Project_Technion/Tasks/NeuralGroupTesting/data/dummy_group_testing_dataset'
 
 
 best_acc1 = 0
 
 
 def main():
-    
 
     pathlib.Path(dataset_path).mkdir(parents=True, exist_ok=True)
 
     ##################################
     # True group testing with fixed schedule
     ##################################
-   
+
     val_dataset_list = []
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
@@ -59,13 +58,45 @@ def main():
                 transforms.ToTensor(),
                 normalize,
             ]))
+        # The following code is made by Tang to show the modified images
+        # Check labels of the validation dataset
+        print(val_dataset.imgs[:150])  # Print first 10 image paths and labels
+
+        import matplotlib.pyplot as plt
+        from PIL import Image
+
+        # Function to display image
+        def display_image(image, title):
+            plt.imshow(image)
+            plt.title(title)
+            plt.axis('off')
+            plt.show()
+
+        # Select an example image from the validation dataset (Let's say the first image)
+        img_index = 0
+        img, label = val_dataset[img_index]
+        filename = val_dataset.imgs[img_index][0].split(
+            '\\')[-1]  # Extract filename from the full path
+
+        # Convert the tensor back to a PIL Image for the modified image
+        modified_img = transforms.ToPILImage()(img)
+
+        # Load the original image directly using PIL for comparison
+        original_img = Image.open(
+            val_dataset.imgs[img_index][0]).convert("RGB")
+
+        # Display the original and modified images
+        display_image(original_img, f"Original - {filename} - Label: {label}")
+        display_image(modified_img, f"Modified - {filename} - Label: {label}")
+
+        # End of Tang's code
         print("No. {}, val_dataset {}".format(folder_idx, valdir),
               "dataset len:", len(val_dataset.samples))
         val_dataset_list.append(val_dataset)
         del val_dataset
 
     group_test_val_dataset = GroupTestDataset_val(
-        val_dataset_list, None, split='val',valK=1)
+        val_dataset_list, None, split='val', valK=1)
     group_test_val_loader = torch.utils.data.DataLoader(
         group_test_val_dataset,
         batch_size=15, shuffle=False,
@@ -73,9 +104,7 @@ def main():
         drop_last=False)
     criterion = nn.CrossEntropyLoss()
     validate(group_test_val_loader, None,
-                        criterion, None, dumpResult=True)
-
-
+             criterion, None, dumpResult=True)
 
 
 def main_worker(gpu, ngpus_per_node, args):
@@ -141,6 +170,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 transforms.ToTensor(),
                 normalize,
             ]))
+
         print("No. {}, val_dataset {}".format(folder_idx, valdir),
               "dataset len:", len(val_dataset.samples))
         val_dataset_list.append(val_dataset)
@@ -158,7 +188,7 @@ def main_worker(gpu, ngpus_per_node, args):
         drop_last=False)
     criterion = nn.CrossEntropyLoss()
     validate(group_test_val_loader, None,
-                        criterion, args, dumpResult=True)
+             criterion, args, dumpResult=True)
     # create model
     if args.pretrained:
         print("=> using pre-trained model '{}'".format(args.arch))
@@ -431,15 +461,19 @@ def validate(val_loader, model, criterion, args, dumpResult=False):
             # output = model(images)
             output = torch.randn(target.shape[0], 2)
             num_to_correct = int(0.9 * target.shape[0])
-            random_indices = random.sample(range(target.shape[0]), num_to_correct)
+            random_indices = random.sample(
+                range(target.shape[0]), num_to_correct)
             print(f"Data type of output: {output.dtype}")
             # Tang: We are seeing 15 items here because batch_size is 15
             print(f"Data type of target: {target.dtype}")
             for idx in random_indices:
                 correct_class = target[idx].item()
-                incorrect_class = 1 - correct_class  # Since it's binary classification, the incorrect class is 1 - correct_class
-                output[idx, correct_class] += 10  # Make the correct class more likely
-                output[idx, incorrect_class] -= 10  # Make the incorrect class less likely
+                # Since it's binary classification, the incorrect class is 1 - correct_class
+                incorrect_class = 1 - correct_class
+                # Make the correct class more likely
+                output[idx, correct_class] += 10
+                # Make the incorrect class less likely
+                output[idx, incorrect_class] -= 10
             loss = criterion(output, target)
 
             # measure accuracy and record loss
@@ -484,7 +518,7 @@ def validate(val_loader, model, criterion, args, dumpResult=False):
         # if len(unique_classes) > 1:
         # Calculate ROC AUC score
         #    roc_auc = roc_auc_score(y_true, y_score)
-        #else:
+        # else:
         #   print(f"Only one class {unique_classes[0]} present in y_true. ROC AUC score cannot be calculated.")
 
         print("roc_auc_score {:.3f}".format(
@@ -852,17 +886,17 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
         # indices = torch.randperm( len(mixing_data_list), generator=torch.Generator().manual_seed(43)).tolist() # only for non-adaptive testing
 
         shuffled_mixing_data_list = np.array(mixing_data_list)[indices]
-        print("Tang: shuffled_mixing_data_list is {}\n".format( shuffled_mixing_data_list))
+        print("Tang: shuffled_mixing_data_list is {}\n".format(
+            shuffled_mixing_data_list))
         assert len(shuffled_mixing_data_list) == len(mixing_data_list)
 
         ##################################
         # Configure background K
         ##################################
-        #if valK is None:
-            # self.background_K = 1 # 8-1 # (16-1) # 4 # 0: 96%, 1:96%, 4 - 94%, 9: 89%, 14:80.7% 19: 72%
-            #self.background_K = self.args.background_K
+        # if valK is None:
+        # self.background_K = 1 # 8-1 # (16-1) # 4 # 0: 96%, 1:96%, 4 - 94%, 9: 89%, 14:80.7% 19: 72%
+        # self.background_K = self.args.background_K
         self.background_K = valK
-      
 
         ##################################
         # Reshape the list
@@ -873,7 +907,7 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
             self.background_K + 1,
             2
         ).transpose((1, 0, 2))
-        
+
         print("Tang: dataset_samples is {}\n".format(self.dataset_samples))
         print("Tang：shuffled_mixing_data_list\n", self.dataset_samples.shape)
 

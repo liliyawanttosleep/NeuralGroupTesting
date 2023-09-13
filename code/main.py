@@ -178,6 +178,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
 
     # Data loading code
+    # They use this values according to the paper Imagenet Classification with Deep Convolutional Neural Networks
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
@@ -469,6 +470,7 @@ def is_main_process():
     return get_rank() == 0
 
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, roc_auc_score
+# Here confusion_matrix shows the number of true negative(first row first column), false positive(first row second column), false negative(second row first column), true positive(second  row second column).
 
 def validate(val_loader, model, criterion, args, dumpResult=False):
     batch_time = AverageMeter('Time', ':6.3f')
