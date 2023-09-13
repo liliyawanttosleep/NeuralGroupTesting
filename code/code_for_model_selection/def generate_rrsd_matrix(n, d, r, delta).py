@@ -1,8 +1,12 @@
-def generate_rrsd_matrix(n, d, r, delta):
+import numpy as np
+import math
+def generate_rrsd_matrix(n, d, delta):
 
-    # p = np.exp(-1/d)
-    # r = int((1-p)*(n-d+1))
+    p = np.exp(-1/d)
+    r = int((1-p)*(n-d+1))
+    print('Tang:r is {}\n'.format(r))
     m = int(np.exp(1)*d*math.log(2*n/delta))
+    print('Tang: the number of tests required is {}\n'.format(m))
     matrix = []
 
     matrix = np.zeros((m, n))
@@ -14,6 +18,10 @@ def generate_rrsd_matrix(n, d, r, delta):
     matrix = np.array(matrix)
     return matrix
 
+
+test_matrix = generate_rrsd_matrix(10000,5,0.01)
+print(test_matrix)
+'''
 def algorithm_4_wrapper(
     pkl_name:str, 
     exp_title:str, 
@@ -152,3 +160,4 @@ def algorithm_4_wrapper(
         )
 
     print("##################################")
+'''
