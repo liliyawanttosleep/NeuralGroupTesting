@@ -184,34 +184,6 @@ def main_worker(gpu, ngpus_per_node, args):
 
     train_dataset_list = []
     val_dataset_list = []
-
-    ##################################
-    # The following is the explanation of why we need transformation for each dataset
-    '''
-    Why Random Resizing and Cropping?
-    Generalization: By showing the model different parts of an image, you're essentially telling it, "Hey, the important features could be anywhere, so pay attention!" This helps the model generalize better to unseen data.
-
-    Data Augmentation: Random cropping and resizing are forms of data augmentation. By slightly altering the original images, you artificially increase the size of your dataset. This is particularly useful when you don't have a lot of data.
-
-    Computational Efficiency: Neural networks often require fixed-size input. Resizing and cropping make sure that all images fit this criterion. Plus, smaller images are faster to process.
-
-    Why Not Use the Whole Image?
-    Overfitting: If you always use the whole image, the model might memorize specific details that aren't important. It might perform well on the training data but fail on new, unseen data.
-
-    Computational Cost: Larger images contain more pixels, which means more data to process. This increases the computational cost and the time needed for training.
-
-    Fixed Input Size: Many pre-trained models and architectures expect a certain input size. Resizing and cropping help standardize the input size.
-
-    Research Tips:
-    Trade-offs: Understanding the trade-offs between data augmentation and potential information loss is crucial. Sometimes specific tasks may require more precise cropping or even custom data augmentation methods.
-
-    Experiment: As a researcher, you'll often find yourself experimenting with these settings. It's not uncommon to try different data augmentation techniques to see which one works best for your specific problem.
-
-    Literature Review: For specific tasks, looking at what has been done before can be very informative. Researchers often include details about data augmentation in their papers.
-
-    So, in essence, while you might lose some data, the gains in generalization, computational efficiency, and model robustness often outweigh the cons. It's a bit like cooking—sometimes less really is more!
-    
-    '''
     ##################################
 
     for folder_idx in range(args.task_num):
@@ -856,7 +828,7 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
         ##################################
         # Default Prevalence = 0.1%
         ##################################
-        print("Tang:{}\n".format(positive_data_list[0][0]))
+        # print("Tang:{}\n".format(positive_data_list[0][0]))
         
         positive_data_list = [[s[0], positive_target] for s in positive_data_list if s[0].split(
             '\\')[-1] in Constants.firearm_file_paths]
@@ -864,8 +836,9 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
 
         normal_data_list = []  # normal classes in imagenet
         # Here dataset_list[1:] is the negative data
-        print("Tang: The shape of the dataset_list is {}\n".format(len(dataset_list)))
+        # print("Tang: The shape of the dataset_list is {}\n".format(len(dataset_list)))
         # The underscore _ is used as a variable name when the loop counter is not needed; it's a common Python convention to indicate that the variable is intentionally unused.
+        '''
         i=0 # Tang: This is just for debugging
         for _, ds in enumerate(dataset_list[1:]):
             samples_this_ds = ds.samples
@@ -876,12 +849,12 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
             normal_data_list.extend(samples_this_ds)
         
         print("Tang: The first five item of the normal_data_list is {}\n".format(normal_data_list[:5]))
-
+        '''
         ##################################
         # Split for binary classification
         ##################################
         negative_data_list = normal_data_list
-        print("Tang: The length of the positive_data_list and negative_data_list is {} and {}\n".format(len(positive_data_list), len(negative_data_list)))
+        # print("Tang: The length of the positive_data_list and negative_data_list is {} and {}\n".format(len(positive_data_list), len(negative_data_list)))
 
         ##################################
         # Overwrite to test on full test images (super noisy)
@@ -940,7 +913,7 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
                               for s in negative_data_list]
 
         # concat and shuffle
-        print("Tang: After The length of the positive_data_list and negative_data_list is {} and {}\n".format(len(positive_data_list), len(negative_data_list)))
+        # print("Tang: After The length of the positive_data_list and negative_data_list is {} and {}\n".format(len(positive_data_list), len(negative_data_list)))
         mixing_data_list = positive_data_list + negative_data_list
 
         ##################################
@@ -967,12 +940,14 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
         ##################################
         # Reshape the list
         ##################################
+        '''
         print("Tang:shuffled_mixing_data_list\n", shuffled_mixing_data_list.shape)
         print("Tang:The length of the shuffled mixing data list is {}\n".format(len(shuffled_mixing_data_list)))
         print("Tang:First 5 items of shuffled_mixing_data_list:\n", shuffled_mixing_data_list[:5])
         print("Tang:the length of the first element in the shuffled_mixing_data_list is {}\n".format(len(shuffled_mixing_data_list[0])))
         print("Tang:the first entry of the first element in the shuffled_mixing_data_list is {}\n".format(shuffled_mixing_data_list[0][0]))
         print("Tang:the second entry of the first element in the shuffled_mixing_data_list is {}\n".format(shuffled_mixing_data_list[0][1]))
+        '''
         ##################################
         #Objects in the shuffled_mixing_data_list
         #Tang:First 5 items of shuffled_mixing_data_list:[['F:/Summer_Project_Technion/Tasks/NeuralGroupTesting/data/group_testing_dataset\\1\\val\\n02025239\\ILSVRC2012_val_00043769.JPEG''0']
@@ -991,7 +966,7 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
 
         # Calculate the maximum size divisible by (self.background_K + 1) * 2
         max_reshape_length = (list_size // reshape_size) * reshape_size
-        print("Tang: max_reshape_length is {}\n".format(max_reshape_length))
+        # print("Tang: max_reshape_length is {}\n".format(max_reshape_length))
 
         # Trim the list to this size
         shuffled_mixing_data_list = np.array(shuffled_mixing_data_list[:max_reshape_length])
