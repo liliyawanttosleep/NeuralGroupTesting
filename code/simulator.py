@@ -58,8 +58,49 @@ def main():
                 transforms.ToTensor(),
                 normalize,
             ]))
+
         # The following code is made by Tang to show the modified images
         # Check labels of the validation dataset
+        print("========================================")
+        print("Tang's Modified Section: Printing Transformed Tensor Information")
+        print("========================================")
+
+        # Load a single image from val_dataset (Let's say the first image)
+        img_index = 0
+        img_tensor, label = val_dataset[img_index]
+
+        # Print the label
+        print(f"Label for the image at index {img_index}: {label}")
+
+        # Print the shape of the tensor
+        # The shape tells you the dimensions of the tensor. For an image, it's generally [C, H, W].
+        print(f"Shape of the tensor: {img_tensor.shape}")
+
+        # Print the data type of the tensor
+        # It's good to know the data type for debugging and understanding the kind of data you're dealing with.
+        print(f"Data type of the tensor: {img_tensor.dtype}")
+
+        # Print the first few values of the tensor for a quick look
+        # This gives you a snapshot of the kind of values your tensor contains.
+        print(f"First few values of the tensor: {img_tensor[:, :2, :2]}")
+
+        # Print the min and max values of the tensor
+        # Knowing the range of values can help you understand if the tensor has been normalized or scaled.
+        print(f"Min value in the tensor: {torch.min(img_tensor)}")
+        print(f"Max value in the tensor: {torch.max(img_tensor)}")
+
+        # Print the whole tensor
+        # Be cautious with this if your tensor is large, as it could flood your output.
+        print(f"Whole tensor: {img_tensor}")
+
+        # Explanation
+        # This tensor represents a single image from your validation set after it has been resized, center-cropped, and normalized.
+        # Each value in this tensor is a pixel value for a particular channel (R, G, or B).
+
+        print("========================================")
+        print("End of Tang's Modified Section")
+        print("========================================")
+
         print(val_dataset.imgs[:150])  # Print first 10 image paths and labels
 
         import matplotlib.pyplot as plt

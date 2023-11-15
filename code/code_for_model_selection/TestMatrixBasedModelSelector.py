@@ -60,13 +60,14 @@ class TestMatrixBasedModelSelector:
                 if set(defective_set) == decoded_set:
                     correct_decodes += 1
 
-                print(f"Defective Set: {defective_set}")
-                print(f"Decoded Set: {decoded_set}")
+                #print(f"Defective Set: {defective_set}")
+                #print(f"Decoded Set: {decoded_set}")
                 
                 total_score += self.calculate_score(false_positives)
             
             average_score = total_score / self.H
             print(f"Correctly Decoded: {correct_decodes} out of {self.H}")
+            print(f"Current score:{average_score}")
             
             if average_score > best_score:
                 best_score = average_score
@@ -76,7 +77,7 @@ class TestMatrixBasedModelSelector:
 
 # Example usage
 if __name__ == "__main__":
-    selector = TestMatrixBasedModelSelector(n=10, d=2, delta=0.1, B=10, H=10)
+    selector = TestMatrixBasedModelSelector(n=2048, d=16, delta=0.1, B=100, H=100)
     result = selector.find_best_model()
     best_matrix = result['best_matrix']
     best_score = result['best_score']

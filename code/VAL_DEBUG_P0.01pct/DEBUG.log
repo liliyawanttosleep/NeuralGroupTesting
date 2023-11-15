@@ -1,0 +1,17 @@
+2023-11-15 20:57:16,000: INFO: [main.py:165]: Namespace(data='F:/Summer_Project_Technion/Tasks/NeuralGroupTesting/data/group_testing_dataset', task_num=2, background_K=7, arch='resnext101_32x8d', workers=32, val_workers=8, epochs=90, start_epoch=0, batch_size=15, lr=0.001, momentum=0.9, weight_decay=0.0001, print_freq=50, resume='F:/Summer_Project_Technion/Final_Project/NeuralGroupTesting/FullModel/checkpoint.pth.tar', evaluate=True, pretrained=True, world_size=-1, rank=-1, dist_url='tcp://224.66.41.62:23456', dist_backend='nccl', seed=None, gpu=None, multiprocessing_distributed=False, log_name='DEBUG.log', output_dir='VAL_DEBUG_P0.01pct', distributed=False)
+2023-11-15 21:00:12,310: INFO: [main.py:597]: accuracy 0.992
+2023-11-15 21:00:12,310: INFO: [main.py:599]: roc_auc_score 0.545
+2023-11-15 21:00:12,310: INFO: [main.py:601]: confusion_matrix
+[[6057    0]
+ [  49    0]]
+2023-11-15 21:00:12,320: INFO: [main.py:603]: classification_report
+              precision    recall  f1-score   support
+
+           0       0.99      1.00      1.00      6057
+           1       0.00      0.00      0.00        49
+
+    accuracy                           0.99      6106
+   macro avg       0.50      0.50      0.50      6106
+weighted avg       0.98      0.99      0.99      6106
+
+2023-11-15 21:00:12,320: INFO: [main.py:605]: VAL * Acc@1 99.198

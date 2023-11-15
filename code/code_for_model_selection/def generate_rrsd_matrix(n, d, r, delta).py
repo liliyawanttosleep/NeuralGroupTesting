@@ -19,7 +19,7 @@ def generate_rrsd_matrix(n, d, delta):
     return matrix
 
 
-test_matrix = generate_rrsd_matrix(10000,5,0.01)
+test_matrix = generate_rrsd_matrix(20,1,0.05)
 print(test_matrix)
 '''
 def algorithm_4_wrapper(

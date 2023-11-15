@@ -1,4 +1,5 @@
-import resnet_design3 as models # Design 3
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, roc_auc_score
+import resnet_design3 as models  # Design 3
 # import resnet_design2 as models # Design 2
 import argparse
 import os
@@ -20,30 +21,32 @@ import torchvision.datasets as datasets
 # import torchvision.models as models
 import numpy as np
 import logging
-import pickle 
+import pickle
 import pathlib
 
 model_names = sorted(name for name in models.__dict__
-    if name.islower() and not name.startswith("__")
-    and callable(models.__dict__[name]))
+                     if name.islower() and not name.startswith("__")
+                     and callable(models.__dict__[name]))
+
 
 def get_args_parser():
-    parser = argparse.ArgumentParser('PyTorch ImageNet Training', add_help=False)
-    parser.add_argument('--data', metavar='DIR', default='/home/weixin/data/mix_mini_imagenet', 
-                        help='path to dataset') # to the root of the meta-dataset 
+    parser = argparse.ArgumentParser(
+        'PyTorch ImageNet Training', add_help=False)
+    parser.add_argument('--data', metavar='DIR', default='/home/weixin/data/mix_mini_imagenet',
+                        help='path to dataset')  # to the root of the meta-dataset
     parser.add_argument('--task-num', default=5, type=int, metavar='N',
                         help='number of meta tasks used (default: 25, 4 classes in each task and 100 in total)')
     parser.add_argument('--background-K', default=1, type=int, metavar='N',
                         help='number of images total in the pool testing)')
     # parser.add_argument('--max-way', default=5, type=int, metavar='N',
-    #                     help='number of way for the classifier (default: 5-way classification)') 
+    #                     help='number of way for the classifier (default: 5-way classification)')
     parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                         choices=model_names,
                         help='model architecture: ' +
-                            ' | '.join(model_names) +
-                            ' (default: resnet18)')
+                        ' | '.join(model_names) +
+                        ' (default: resnet18)')
     parser.add_argument('-j', '--workers', default=32, type=int, metavar='N',
-    # parser.add_argument('-j', '--workers', default=64, type=int, metavar='N',
+                        # parser.add_argument('-j', '--workers', default=64, type=int, metavar='N',
                         help='number of data loading workers (default: 4)')
     parser.add_argument('-valj', '--val-workers', default=8, type=int, metavar='N',
                         help='number of data loading workers (default: 4)')
@@ -54,8 +57,8 @@ def get_args_parser():
     parser.add_argument('-b', '--batch-size', default=256, type=int,
                         metavar='N',
                         help='mini-batch size (default: 256), this is the total '
-                            'batch size of all GPUs on the current node when '
-                            'using Data Parallel or Distributed Data Parallel')
+                        'batch size of all GPUs on the current node when '
+                        'using Data Parallel or Distributed Data Parallel')
     parser.add_argument('--lr', '--learning-rate', default=0.001, type=float,
                         metavar='LR', help='initial learning rate', dest='lr')
     parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
@@ -82,15 +85,15 @@ def get_args_parser():
     parser.add_argument('--dist-backend', default='nccl', type=str,
                         help='distributed backend')
     parser.add_argument('--seed', default=None, type=int,
-    # parser.add_argument('--seed', default=1234, type=int,
+                        # parser.add_argument('--seed', default=1234, type=int,
                         help='seed for initializing training. ')
     parser.add_argument('--gpu', default=None, type=int,
                         help='GPU id to use.')
     parser.add_argument('--multiprocessing-distributed', action='store_true',
                         help='Use multi-processing distributed training to launch '
-                            'N processes per node, which has N GPUs. This is the '
-                            'fastest way to use PyTorch for either single node or '
-                            'multi node data parallel training')
+                        'N processes per node, which has N GPUs. This is the '
+                        'fastest way to use PyTorch for either single node or '
+                        'multi node data parallel training')
 
     parser.add_argument('--log-name', default='ouptut.log', type=str, metavar='PATH',
                         help='path to the log file (default: output.log)')
@@ -98,7 +101,8 @@ def get_args_parser():
     parser.add_argument('--output_dir', default='outputTmp',
                         help='path where to save, empty for no saving')
 
-    return parser 
+    return parser
+
 
 best_acc1 = 0
 
@@ -108,9 +112,6 @@ def main():
     args = parser.parse_args()
 
     pathlib.Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-
-
-
 
     if args.seed is not None:
         random.seed(args.seed)
@@ -138,7 +139,8 @@ def main():
         args.world_size = ngpus_per_node * args.world_size
         # Use torch.multiprocessing.spawn to launch distributed processes: the
         # main_worker process function
-        mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
+        mp.spawn(main_worker, nprocs=ngpus_per_node,
+                 args=(ngpus_per_node, args))
     else:
         # Simply call main_worker function
         main_worker(args.gpu, ngpus_per_node, args)
@@ -151,16 +153,16 @@ def main_worker(gpu, ngpus_per_node, args):
     ##################################
     # Logging setting
     ##################################
-    
+
     logging.basicConfig(
-        filename=os.path.join( args.output_dir, args.log_name),
+        filename=os.path.join(args.output_dir, args.log_name),
         filemode='w',
         format='%(asctime)s: %(levelname)s: [%(filename)s:%(lineno)d]: %(message)s',
         level=logging.INFO)
     warnings.filterwarnings("ignore")
 
     print(str(args))
-    logging.info( str(args) )
+    logging.info(str(args))
 
     if args.gpu is not None:
         print("Use GPU: {} for training".format(args.gpu))
@@ -175,16 +177,42 @@ def main_worker(gpu, ngpus_per_node, args):
         dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
                                 world_size=args.world_size, rank=args.rank)
 
-
-
     # Data loading code
     # They use this values according to the paper Imagenet Classification with Deep Convolutional Neural Networks
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
-    
     train_dataset_list = []
     val_dataset_list = []
+
+    ##################################
+    # The following is the explanation of why we need transformation for each dataset
+    '''
+    Why Random Resizing and Cropping?
+    Generalization: By showing the model different parts of an image, you're essentially telling it, "Hey, the important features could be anywhere, so pay attention!" This helps the model generalize better to unseen data.
+
+    Data Augmentation: Random cropping and resizing are forms of data augmentation. By slightly altering the original images, you artificially increase the size of your dataset. This is particularly useful when you don't have a lot of data.
+
+    Computational Efficiency: Neural networks often require fixed-size input. Resizing and cropping make sure that all images fit this criterion. Plus, smaller images are faster to process.
+
+    Why Not Use the Whole Image?
+    Overfitting: If you always use the whole image, the model might memorize specific details that aren't important. It might perform well on the training data but fail on new, unseen data.
+
+    Computational Cost: Larger images contain more pixels, which means more data to process. This increases the computational cost and the time needed for training.
+
+    Fixed Input Size: Many pre-trained models and architectures expect a certain input size. Resizing and cropping help standardize the input size.
+
+    Research Tips:
+    Trade-offs: Understanding the trade-offs between data augmentation and potential information loss is crucial. Sometimes specific tasks may require more precise cropping or even custom data augmentation methods.
+
+    Experiment: As a researcher, you'll often find yourself experimenting with these settings. It's not uncommon to try different data augmentation techniques to see which one works best for your specific problem.
+
+    Literature Review: For specific tasks, looking at what has been done before can be very informative. Researchers often include details about data augmentation in their papers.
+
+    So, in essence, while you might lose some data, the gains in generalization, computational efficiency, and model robustness often outweigh the cons. It's a bit like cooking—sometimes less really is more!
+    
+    '''
+    ##################################
 
     for folder_idx in range(args.task_num):
         traindir = os.path.join(args.data, str(folder_idx), 'train')
@@ -192,38 +220,48 @@ def main_worker(gpu, ngpus_per_node, args):
         train_dataset = datasets.ImageFolder(
             traindir,
             transforms.Compose([
+                # Randomly resize and crop the image to 224x224 pixels
                 transforms.RandomResizedCrop(224),
+                # Randomly flip the image horizontally
                 transforms.RandomHorizontalFlip(),
+                # Transform it into a PyTorch Tensor
                 transforms.ToTensor(),
+                # Normalize the image (mean and standard deviation)
                 normalize,
             ]))
-        print( "No. {}, traindir {}".format(folder_idx, traindir), "dataset len:", len(train_dataset.samples) )
-
+        print("No. {}, traindir {}".format(folder_idx, traindir),
+              "dataset len:", len(train_dataset.samples))
 
         train_dataset_list.append(train_dataset)
         del train_dataset
 
         val_dataset = datasets.ImageFolder(
-            valdir, 
+            valdir,
             transforms.Compose([
+                # Resize the image to 256x256 pixels
                 transforms.Resize(256),
+                # Center-crop the image to 224x224 pixels
                 transforms.CenterCrop(224),
+                # Transform it into a PyTorch Tensor
                 transforms.ToTensor(),
+                # Normalize the image (mean and standard deviation)
                 normalize,
             ]))
-        print( "No. {}, val_dataset {}".format(folder_idx, valdir), "dataset len:", len(val_dataset.samples) )
+        print("No. {}, val_dataset {}".format(folder_idx, valdir),
+              "dataset len:", len(val_dataset.samples))
         val_dataset_list.append(val_dataset)
         del val_dataset
 
     ##################################
-    # True group testing with fixed schedule 
+    # True group testing with fixed schedule
     ##################################
-    group_test_val_dataset = GroupTestDataset_val(val_dataset_list, args, split='val')
+    group_test_val_dataset = GroupTestDataset_val(
+        val_dataset_list, args, split='val')
     group_test_val_loader = torch.utils.data.DataLoader(
         group_test_val_dataset,
         batch_size=args.batch_size, shuffle=False,
-        num_workers=args.val_workers, pin_memory=True, 
-        drop_last=False) 
+        num_workers=args.val_workers, pin_memory=True,
+        drop_last=False)
 
     # create model
     if args.pretrained:
@@ -234,10 +272,9 @@ def main_worker(gpu, ngpus_per_node, args):
         back_bone_model = models.__dict__[args.arch]()
 
     ##################################
-    # Modificaiton Happens in the backbone model 
+    # Modificaiton Happens in the backbone model
     ##################################
-    model = back_bone_model 
-    
+    model = back_bone_model
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
@@ -250,8 +287,10 @@ def main_worker(gpu, ngpus_per_node, args):
             # DistributedDataParallel, we need to divide the batch size
             # ourselves based on the total number of GPUs we have
             args.batch_size = int(args.batch_size / ngpus_per_node)
-            args.workers = int((args.workers + ngpus_per_node - 1) / ngpus_per_node)
-            model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+            args.workers = int(
+                (args.workers + ngpus_per_node - 1) / ngpus_per_node)
+            model = torch.nn.parallel.DistributedDataParallel(
+                model, device_ids=[args.gpu])
             # raise NotImplementedError
         else:
             model.cuda()
@@ -274,8 +313,6 @@ def main_worker(gpu, ngpus_per_node, args):
             ##################################
             model = torch.nn.DataParallel(model).cuda()
 
-
-
     # define loss function (criterion) and optimizer
 
     ##################################
@@ -286,7 +323,6 @@ def main_worker(gpu, ngpus_per_node, args):
     # criterion = nn.CrossEntropyLoss(weight=weights).cuda(args.gpu)
 
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
-
 
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
@@ -316,35 +352,34 @@ def main_worker(gpu, ngpus_per_node, args):
 
     cudnn.benchmark = True
 
-
     if args.evaluate:
-        acc1 = validate(group_test_val_loader, model, criterion, args, dumpResult=True)
+        acc1 = validate(group_test_val_loader, model,
+                        criterion, args, dumpResult=True)
         return
 
     ##################################
-    # No need to shuffle val data 
+    # No need to shuffle val data
     ##################################
     # val_dataset = TaskCoalitionDataset_SuperImposing(val_dataset_list, args, split='val')
     # print( "len(val_dataset)", len(val_dataset) )
     # val_loader = torch.utils.data.DataLoader(
     #     val_dataset,
     #     batch_size=args.batch_size, shuffle=False,
-    #     num_workers=args.val_workers, pin_memory=True, 
-    #     drop_last=False) 
+    #     num_workers=args.val_workers, pin_memory=True,
+    #     drop_last=False)
 
     ##################################
-    # Also construct a val single dataset 
+    # Also construct a val single dataset
     ##################################
     # val_dataset_K1 = TaskCoalitionDataset_SuperImposing(val_dataset_list, args, split='val', valK=0)
     # val_loader_K1 = torch.utils.data.DataLoader(
     #     val_dataset_K1,
     #     batch_size=args.batch_size, shuffle=False,
-    #     num_workers=args.val_workers, pin_memory=True, 
-    #     drop_last=False) 
-
+    #     num_workers=args.val_workers, pin_memory=True,
+    #     drop_last=False)
 
     # if args.evaluate:
-    #     # TODO: move it forward, and hack a dataset there. 
+    #     # TODO: move it forward, and hack a dataset there.
     #     acc1 = validate(val_loader, model, criterion, args, dumpResult=True)
     #     validate(val_loader_K1, model, criterion, args, dumpResult=False)
     #     return
@@ -361,48 +396,49 @@ def main_worker(gpu, ngpus_per_node, args):
         # evaluate on validation set
         # acc1 = validate(val_loader, model, criterion, args, dumpResult=True)
         ##################################
-        # Also validate single image 
+        # Also validate single image
         ##################################
         # validate(val_loader_K1, model, criterion, args, dumpResult=False)
 
         ##################################
-        # Test with fixed group testing schedule 
+        # Test with fixed group testing schedule
         ##################################
-        acc1 = validate(group_test_val_loader, model, criterion, args, dumpResult=True)
-
+        acc1 = validate(group_test_val_loader, model,
+                        criterion, args, dumpResult=True)
 
         # remember best acc@1 and save checkpoint
         is_best = acc1 > best_acc1
         best_acc1 = max(acc1, best_acc1)
 
         if not args.multiprocessing_distributed or (args.multiprocessing_distributed
-                and args.rank % ngpus_per_node == 0):
+                                                    and args.rank % ngpus_per_node == 0):
             save_checkpoint({
                 'epoch': epoch + 1,
                 'arch': args.arch,
                 'state_dict': model.state_dict(),
                 'best_acc1': best_acc1,
-                'optimizer' : optimizer.state_dict(),
+                'optimizer': optimizer.state_dict(),
             }, is_best, args=args)
 
 
 def train(train_dataset_list, model, criterion, optimizer, epoch, args):
 
-
-    train_dataset = TaskCoalitionDataset_SuperImposing(train_dataset_list, args, split='train')
-    print( "len(train_dataset)", len(train_dataset) )
+    train_dataset = TaskCoalitionDataset_SuperImposing(
+        train_dataset_list, args, split='train')
+    print("len(train_dataset)", len(train_dataset))
     if args.distributed:
-        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
-        if args.distributed: # added to support distributed 
+        train_sampler = torch.utils.data.distributed.DistributedSampler(
+            train_dataset)
+        if args.distributed:  # added to support distributed
             train_sampler.set_epoch(epoch)
     else:
         train_sampler = None
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
+        train_dataset, batch_size=args.batch_size, shuffle=(
+            train_sampler is None),
         num_workers=args.workers, pin_memory=True, sampler=train_sampler,
         drop_last=True)
-
 
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
@@ -414,7 +450,6 @@ def train(train_dataset_list, model, criterion, optimizer, epoch, args):
         [batch_time, data_time, losses, top1],
         # [batch_time, losses, center_losses, top1, top5],
         prefix="Epoch: [{}]".format(epoch))
-
 
     # switch to train mode
     model.train()
@@ -429,12 +464,11 @@ def train(train_dataset_list, model, criterion, optimizer, epoch, args):
         target = target.cuda(args.gpu, non_blocking=True)
 
         ##################################
-        # multi-instance learning 
+        # multi-instance learning
         ##################################
         # compute output
         output = model(images)
-        loss = criterion(output, target) 
-
+        loss = criterion(output, target)
 
         # measure accuracy and record loss
         # acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -454,6 +488,7 @@ def train(train_dataset_list, model, criterion, optimizer, epoch, args):
         if i % args.print_freq == 0 or i == len(train_loader)-1:
             progress.display(i)
 
+
 def is_dist_avail_and_initialized():
     if not dist.is_available():
         return False
@@ -461,16 +496,19 @@ def is_dist_avail_and_initialized():
         return False
     return True
 
+
 def get_rank():
     if not is_dist_avail_and_initialized():
         return 0
     return dist.get_rank()
 
+
 def is_main_process():
     return get_rank() == 0
 
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, roc_auc_score
+
 # Here confusion_matrix shows the number of true negative(first row first column), false positive(first row second column), false negative(second row first column), true positive(second  row second column).
+
 
 def validate(val_loader, model, criterion, args, dumpResult=False):
     batch_time = AverageMeter('Time', ':6.3f')
@@ -488,11 +526,10 @@ def validate(val_loader, model, criterion, args, dumpResult=False):
         end = time.time()
 
         ##################################
-        # Fields to be stored for postprocessing 
+        # Fields to be stored for postprocessing
         ##################################
         target_all = []
-        pred_score_all = [] 
-
+        pred_score_all = []
 
         for i, (images, target) in enumerate(val_loader):
             if args.gpu is not None:
@@ -502,7 +539,8 @@ def validate(val_loader, model, criterion, args, dumpResult=False):
             # compute output
             output = model(images)
             loss = criterion(output, target)
-
+            # print("Tang: The output of the {}th image is {}\n".format(i, output))
+            # print("Tang: The target of the {}th image is {}\n".format(i, target))
 
             # measure accuracy and record loss
             # acc1, acc5 = accuracy(output, target, topk=(1,5))
@@ -521,31 +559,33 @@ def validate(val_loader, model, criterion, args, dumpResult=False):
             # For analysis
             ##################################
             output_scores = torch.nn.functional.softmax(output, dim=-1)
-            positive_scores = output_scores[:,1]
+            positive_scores = output_scores[:, 1]
 
-            target_all.append( target.cpu().numpy() )
-            pred_score_all.append( positive_scores.cpu().numpy() )
+            target_all.append(target.cpu().numpy())
+            pred_score_all.append(positive_scores.cpu().numpy())
 
-        target_all = np.concatenate( target_all, axis=0)
-        pred_score_all = np.concatenate( pred_score_all, axis=0)
+        target_all = np.concatenate(target_all, axis=0)
+        pred_score_all = np.concatenate(pred_score_all, axis=0)
 
-        
         if dumpResult is True:
             # with open(os.path.join( args.output_dir, 'model_validate_dump.pkl'), "wb") as pkl_file:
-            with open(os.path.join( args.output_dir, 'model_validate_dump.pkl'), "wb") as pkl_file:
-                pickle.dump( {
-                    "target_all": target_all, 
-                    "pred_score_all": pred_score_all, 
-                    }, 
-                    pkl_file 
+            with open(os.path.join(args.output_dir, 'model_validate_dump.pkl'), "wb") as pkl_file:
+                pickle.dump({
+                    "target_all": target_all,
+                    "pred_score_all": pred_score_all,
+                },
+                    pkl_file
                 )
-        
-        # a large analysis here 
-        pred_label = (pred_score_all>0.5)
-        print("accuracy {:.3f}".format(accuracy_score(target_all, pred_label)) )
-        print("roc_auc_score {:.3f}".format(roc_auc_score(target_all, pred_score_all)) )
-        print("confusion_matrix\n{}".format(confusion_matrix(target_all, pred_label)))
-        print("classification_report\n{}".format(classification_report(target_all, pred_label)))
+
+        # a large analysis here
+        pred_label = (pred_score_all > 0.5)
+        print("accuracy {:.3f}".format(accuracy_score(target_all, pred_label)))
+        print("roc_auc_score {:.3f}".format(
+            roc_auc_score(target_all, pred_score_all)))
+        print("confusion_matrix\n{}".format(
+            confusion_matrix(target_all, pred_label)))
+        print("classification_report\n{}".format(
+            classification_report(target_all, pred_label)))
 
         # TODO: this should also be done with the ProgressMeter
         # print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'
@@ -554,28 +594,33 @@ def validate(val_loader, model, criterion, args, dumpResult=False):
               .format(top1=top1))
 
         # if is_main_process():
-        logging.info("accuracy {:.3f}".format(accuracy_score(target_all, pred_label)) )
-        logging.info("roc_auc_score {:.3f}".format(roc_auc_score(target_all, pred_score_all)) )
-        logging.info("confusion_matrix\n{}".format(confusion_matrix(target_all, pred_label)))
-        logging.info("classification_report\n{}".format(classification_report(target_all, pred_label)))
+        logging.info("accuracy {:.3f}".format(
+            accuracy_score(target_all, pred_label)))
+        logging.info("roc_auc_score {:.3f}".format(
+            roc_auc_score(target_all, pred_score_all)))
+        logging.info("confusion_matrix\n{}".format(
+            confusion_matrix(target_all, pred_label)))
+        logging.info("classification_report\n{}".format(
+            classification_report(target_all, pred_label)))
         logging.info('VAL * Acc@1 {top1.avg:.3f}'
-            .format(top1=top1))
+                     .format(top1=top1))
 
     return top1.avg
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar', args=None): 
+def save_checkpoint(state, is_best, filename='checkpoint.pth.tar', args=None):
 
-    torch.save(state, os.path.join( args.output_dir, filename) )
+    torch.save(state, os.path.join(args.output_dir, filename))
     if is_best:
         shutil.copyfile(
-            os.path.join( args.output_dir, filename), 
-            os.path.join( args.output_dir, 'model_best.pth.tar')
-            )
+            os.path.join(args.output_dir, filename),
+            os.path.join(args.output_dir, 'model_best.pth.tar')
+        )
 
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self, name, fmt=':f'):
         self.name = name
         self.fmt = fmt
@@ -609,7 +654,7 @@ class ProgressMeter(object):
         entries += [str(meter) for meter in self.meters]
         print('\t'.join(entries))
         ##################################
-        # Save to logging 
+        # Save to logging
         ##################################
         logging.info('\t'.join(entries))
 
@@ -622,7 +667,7 @@ class ProgressMeter(object):
 def adjust_learning_rate(optimizer, epoch, args):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     lr = args.lr * (0.1 ** (epoch // 30))
-    # lr = args.lr * (0.1 ** (epoch // 5)) # doesn not work 
+    # lr = args.lr * (0.1 ** (epoch // 5)) # doesn not work
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
@@ -644,97 +689,98 @@ def accuracy(output, target, topk=(1,)):
         return res
 
 
-
 ##################################
-# K - mixing 
+# K - mixing
 # Implementation Assumption:
-# - background tasks data num is at least twice as the positive data num 
+# - background tasks data num is at least twice as the positive data num
 ##################################
 
 class TaskCoalitionDataset_SuperImposing(torch.utils.data.Dataset):
 
     def __init__(self, dataset_list, args, split, valK=None):
 
-        assert split in ['train', 'val'] 
+        assert split in ['train', 'val']
 
-        first_dataset = dataset_list[0] 
+        first_dataset = dataset_list[0]
         self.loader = first_dataset.loader
 
-        self.transform = first_dataset.transform 
-        assert first_dataset.target_transform is None 
+        self.transform = first_dataset.transform
+        assert first_dataset.target_transform is None
 
         self.classes = list()
         self.class_to_idx = dict()
-        self.args = args 
+        self.args = args
 
         self.task_num = len(dataset_list)
 
         ##################################
-        # Get all normal data first 
+        # Get all normal data first
         ##################################
-        positive_data_list = dataset_list[0].samples # weapon 
-        normal_data_list = [ ] # normal classes in imagenet 
+        positive_data_list = dataset_list[0].samples  # weapon
+        normal_data_list = []  # normal classes in imagenet
         for _, ds in enumerate(dataset_list[1:]):
             samples_this_ds = ds.samples
             normal_data_list.extend(samples_this_ds)
 
         normal_data_list = np.random.permutation(normal_data_list)
 
-        ################################## 
-        # Split for binary classification  
-        ################################## 
-        negative_data_list = normal_data_list[:len(positive_data_list)]   
+        ##################################
+        # Split for binary classification
+        ##################################
+        negative_data_list = normal_data_list[:len(positive_data_list)]
 
-        ################################## 
-        # Redo Label Assignment and do mixing 
-        ################################## 
-        positive_target = 1 
-        positive_data_list = [ [s[0], positive_target] for s in positive_data_list]
-        negative_target = 0 
-        negative_data_list = [ [s[0], negative_target] for s in negative_data_list]
+        ##################################
+        # Redo Label Assignment and do mixing
+        ##################################
+        positive_target = 1
+        positive_data_list = [[s[0], positive_target]
+                              for s in positive_data_list]
+        negative_target = 0
+        negative_data_list = [[s[0], negative_target]
+                              for s in negative_data_list]
 
-        mixing_data_list = positive_data_list + negative_data_list 
+        mixing_data_list = positive_data_list + negative_data_list
         # print("mixing_data_list[0]", mixing_data_list[0])
         if split != 'val':
-            mixing_data_list = np.random.permutation( mixing_data_list ) # preserve order 
+            mixing_data_list = np.random.permutation(
+                mixing_data_list)  # preserve order
         # print("mixing_data_list[0]", mixing_data_list[0])
-        
+
         if split == 'train':
-            # self.background_K = 1 #8-1 #(16-1) # 4 
+            # self.background_K = 1 #8-1 #(16-1) # 4
             self.background_K = self.args.background_K
         elif split == 'val':
-            if valK is None: 
-                # self.background_K = 1 # 8-1 # (16-1) # 4 # 0: 96%, 1:96%, 4 - 94%, 9: 89%, 14:80.7% 19: 72% 
+            if valK is None:
+                # self.background_K = 1 # 8-1 # (16-1) # 4 # 0: 96%, 1:96%, 4 - 94%, 9: 89%, 14:80.7% 19: 72%
                 self.background_K = self.args.background_K
             else:
                 self.background_K = valK
 
-        # self.background_K = 0 # 4 
+        # self.background_K = 0 # 4
 
-        background_K_list = [ None for _ in range(self.background_K) ]
+        background_K_list = [None for _ in range(self.background_K)]
         for k_idx in range(self.background_K):
-            k_idx_data_list = np.random.permutation(normal_data_list)[ :len(mixing_data_list)]
+            k_idx_data_list = np.random.permutation(
+                normal_data_list)[:len(mixing_data_list)]
             background_K_list[k_idx] = k_idx_data_list
 
-        ################################## 
-        # Assign as members 
+        ##################################
+        # Assign as members
         # A list of lists
         # - First list: data mixing - postive or negative
-        # - Second list - (K+1) list: background K lists 
-        ################################## 
+        # - Second list - (K+1) list: background K lists
+        ##################################
         self.dataset_samples = [mixing_data_list] + background_K_list
 
-        ################################## 
-        # Augment with normal training data 
-        # Already in the train loop 
-        ################################## 
+        ##################################
+        # Augment with normal training data
+        # Already in the train loop
+        ##################################
         # if split == 'train':
-        #     for folder_idx in range(self.background_K + 1): 
+        #     for folder_idx in range(self.background_K + 1):
         #         # print("self.dataset_samples[folder_idx]", self.dataset_samples[folder_idx], type(self.dataset_samples[folder_idx]))
         #         self.dataset_samples[folder_idx] = np.concatenate( [self.dataset_samples[folder_idx], mixing_data_list], axis=0)
-        #         # repeated. so that in same format  
-
-
+        #         # repeated. so that in same format
 
     def __getitem__(self, index):
         """
@@ -749,179 +795,225 @@ class TaskCoalitionDataset_SuperImposing(torch.utils.data.Dataset):
         # load T images
         ##################################
 
-        superimposed_images = 0 
+        superimposed_images = 0
         mixing_folder_idx = 0
-        target = int(self.dataset_samples[mixing_folder_idx][index][1]) # (path, target) 
+        # (path, target)
+        target = int(self.dataset_samples[mixing_folder_idx][index][1])
 
         images_for_stack_list = []
-        for folder_idx in range(self.background_K + 1): 
-        # for folder_idx in [0]: 
+        for folder_idx in range(self.background_K + 1):
+            # for folder_idx in [0]:
             path, _ = self.dataset_samples[folder_idx][index]
             sample = self.loader(path)
             sample = self.transform(sample)
             images_for_stack_list.append(sample)
 
-        # superimposed_images = superimposed_images / (self.background_K + 1) 
+        # superimposed_images = superimposed_images / (self.background_K + 1)
         superimposed_images = torch.stack(images_for_stack_list)
-        
+
         return superimposed_images, target
 
     def __len__(self):
         return len(self.dataset_samples[0])
 
 ##################################
-# K - mixing 
+# K - mixing
 # Implementation Assumption:
-# - background tasks data num is at least twice as the positive data num 
+# - background tasks data num is at least twice as the positive data num
 ##################################
+
 
 class GroupTestDataset_val(torch.utils.data.Dataset):
 
     def __init__(self, dataset_list, args, split, valK=None):
 
-        assert split in ['val'] 
+        assert split in ['val']
 
-        first_dataset = dataset_list[0] 
+        first_dataset = dataset_list[0]
         self.loader = first_dataset.loader
 
-        self.transform = first_dataset.transform 
-        assert first_dataset.target_transform is None 
+        self.transform = first_dataset.transform
+        assert first_dataset.target_transform is None
 
         self.classes = list()
         self.class_to_idx = dict()
-        self.args = args 
+        self.args = args
 
         self.task_num = len(dataset_list)
 
         ##################################
-        # Get all normal data first 
+        # Get all normal data first
         ##################################
-        positive_data_list = dataset_list[0].samples # weapon 
+        positive_data_list = dataset_list[0].samples  # weapon
 
-        ################################## 
-        # Redo Label Assignment and do mixing 
-        # filter based on file name list 
-        ################################## 
+        ##################################
+        # Redo Label Assignment and do mixing
+        # filter based on file name list
+        ##################################
         import Constants
-        positive_target = 1 
+        positive_target = 1
 
-        ################################## 
+        ##################################
         # Default Prevalence = 0.1%
-        ################################## 
-        positive_data_list = [ [s[0], positive_target] for s in positive_data_list if s[0].split('/')[-1] in Constants.firearm_file_paths]
+        ##################################
+        print("Tang:{}\n".format(positive_data_list[0][0]))
+        
+        positive_data_list = [[s[0], positive_target] for s in positive_data_list if s[0].split(
+            '\\')[-1] in Constants.firearm_file_paths]
         assert len(positive_data_list) == 50, len(positive_data_list)
 
-        normal_data_list = [ ] # normal classes in imagenet 
+        normal_data_list = []  # normal classes in imagenet
+        # Here dataset_list[1:] is the negative data
+        print("Tang: The shape of the dataset_list is {}\n".format(len(dataset_list)))
+        # The underscore _ is used as a variable name when the loop counter is not needed; it's a common Python convention to indicate that the variable is intentionally unused.
+        i=0 # Tang: This is just for debugging
         for _, ds in enumerate(dataset_list[1:]):
             samples_this_ds = ds.samples
+            if i<5:
+                print("Tang the {} sample in the samples_this_ds is {}\n".format(i, samples_this_ds[0]))
+                i+=1
+            print("Tang: The length of the samples_this_ds is {}\n".format(len(samples_this_ds)))
             normal_data_list.extend(samples_this_ds)
+        
+        print("Tang: The first five item of the normal_data_list is {}\n".format(normal_data_list[:5]))
 
-        ################################## 
-        # Split for binary classification  
-        ################################## 
+        ##################################
+        # Split for binary classification
+        ##################################
         negative_data_list = normal_data_list
+        print("Tang: The length of the positive_data_list and negative_data_list is {} and {}\n".format(len(positive_data_list), len(negative_data_list)))
 
-
-        ################################## 
-        # Overwrite to test on full test images (super noisy) 
-        ################################## 
+        ##################################
+        # Overwrite to test on full test images (super noisy)
+        ##################################
         # positive_data_list = [ [s[0], positive_target] for s in positive_data_list]
         # assert len(positive_data_list) == 150, len(positive_data_list)
         # negative_data_list = normal_data_list[:-100]
 
-        ################################## 
+        ##################################
         # Adjust Prevalence
         # Default: prevalence_percentage = 0.1%
-        ################################## 
+        ##################################
 
         # prevalence_percentage = 0.05 # 0.5 # 1.0 #
 
-        prevalence_percentage = 0.1 # default 
+        prevalence_percentage = 0.1  # default
 
         DEFAULT_prevalence_percentage = 0.1
         if prevalence_percentage == DEFAULT_prevalence_percentage:
-            # no modification is needed 
-            pass 
+            # no modification is needed
+            pass
 
         elif prevalence_percentage > DEFAULT_prevalence_percentage:
 
-            positive_data_list = positive_data_list * int(prevalence_percentage/DEFAULT_prevalence_percentage)
+            positive_data_list = positive_data_list * \
+                int(prevalence_percentage/DEFAULT_prevalence_percentage)
             num_negative_cutoff = len(positive_data_list) - 50
             negative_data_list = negative_data_list[num_negative_cutoff:]
-            # OK, repeat positive. cut others 
-            assert len(positive_data_list) == 250 # 500 # 
+            # OK, repeat positive. cut others
+            assert len(positive_data_list) == 250  # 500 #
             pass
         elif prevalence_percentage == 0.01:
-            # cut posivtive, repeat others 
+            # cut posivtive, repeat others
 
             assert prevalence_percentage == 0.01
-            positive_data_list = positive_data_list[::10] # half of the data 
-            negative_data_list = negative_data_list + negative_data_list[:5] # extend 25 data points 
+            positive_data_list = positive_data_list[::10]  # half of the data
+            negative_data_list = negative_data_list + \
+                negative_data_list[:5]  # extend 25 data points
             assert len(positive_data_list) == 5
 
-        elif prevalence_percentage == 0.05 :
-            # cut posivtive, repeat others 
+        elif prevalence_percentage == 0.05:
+            # cut posivtive, repeat others
 
-            assert prevalence_percentage == 0.05 
-            positive_data_list = positive_data_list[::2] # half of the data 
-            negative_data_list = negative_data_list + negative_data_list[:25] # extend 25 data points 
+            assert prevalence_percentage == 0.05
+            positive_data_list = positive_data_list[::2]  # half of the data
+            negative_data_list = negative_data_list + \
+                negative_data_list[:25]  # extend 25 data points
 
-            assert len(positive_data_list) == 25  
+            assert len(positive_data_list) == 25
 
+        ##################################
+        # Redo Label Assignment and do mixing
+        ##################################
+        negative_target = 0
+        negative_data_list = [[s[0], negative_target]
+                              for s in negative_data_list]
 
-        ################################## 
-        # Redo Label Assignment and do mixing 
-        ################################## 
-        negative_target = 0 
-        negative_data_list = [ [s[0], negative_target] for s in negative_data_list]
+        # concat and shuffle
+        print("Tang: After The length of the positive_data_list and negative_data_list is {} and {}\n".format(len(positive_data_list), len(negative_data_list)))
+        mixing_data_list = positive_data_list + negative_data_list
 
-        # concat and shuffle 
-        mixing_data_list = positive_data_list + negative_data_list 
+        ##################################
+        # Consistent: Use seed 42 for all experiments.
+        # For non-adaptive testing that requires another seed: use 43 as the second seed.
+        ##################################
 
-        ################################## 
-        # Consistent: Use seed 42 for all experiments. 
-        # For non-adaptive testing that requires another seed: use 43 as the second seed. 
-        ################################## 
-
-        indices = torch.randperm( len(mixing_data_list), generator=torch.Generator().manual_seed(42)).tolist()
-        # indices = torch.randperm( len(mixing_data_list), generator=torch.Generator().manual_seed(43)).tolist() # only for non-adaptive testing 
+        indices = torch.randperm(
+            len(mixing_data_list), generator=torch.Generator().manual_seed(42)).tolist()
+        # indices = torch.randperm( len(mixing_data_list), generator=torch.Generator().manual_seed(43)).tolist() # only for non-adaptive testing
 
         shuffled_mixing_data_list = np.array(mixing_data_list)[indices]
-        assert len(shuffled_mixing_data_list) == len(mixing_data_list) 
+        assert len(shuffled_mixing_data_list) == len(mixing_data_list)
 
-        ################################## 
+        ##################################
         # Configure background K
-        ##################################         
-        if valK is None: 
-            # self.background_K = 1 # 8-1 # (16-1) # 4 # 0: 96%, 1:96%, 4 - 94%, 9: 89%, 14:80.7% 19: 72% 
+        ##################################
+        if valK is None:
+            # self.background_K = 1 # 8-1 # (16-1) # 4 # 0: 96%, 1:96%, 4 - 94%, 9: 89%, 14:80.7% 19: 72%
             self.background_K = self.args.background_K
         else:
             self.background_K = valK
 
+        ##################################
+        # Reshape the list
+        ##################################
+        print("Tang:shuffled_mixing_data_list\n", shuffled_mixing_data_list.shape)
+        print("Tang:The length of the shuffled mixing data list is {}\n".format(len(shuffled_mixing_data_list)))
+        print("Tang:First 5 items of shuffled_mixing_data_list:\n", shuffled_mixing_data_list[:5])
+        print("Tang:the length of the first element in the shuffled_mixing_data_list is {}\n".format(len(shuffled_mixing_data_list[0])))
+        print("Tang:the first entry of the first element in the shuffled_mixing_data_list is {}\n".format(shuffled_mixing_data_list[0][0]))
+        print("Tang:the second entry of the first element in the shuffled_mixing_data_list is {}\n".format(shuffled_mixing_data_list[0][1]))
+        ##################################
+        #Objects in the shuffled_mixing_data_list
+        #Tang:First 5 items of shuffled_mixing_data_list:[['F:/Summer_Project_Technion/Tasks/NeuralGroupTesting/data/group_testing_dataset\\1\\val\\n02025239\\ILSVRC2012_val_00043769.JPEG''0']
+        # ['F:/Summer_Project_Technion/Tasks/NeuralGroupTesting/data/group_testing_dataset\\1\\val\\n03930630\\ILSVRC2012_val_00001307.JPEG''0']
+        # ['F:/Summer_Project_Technion/Tasks/NeuralGroupTesting/data/group_testing_dataset\\1\\val\\n03843555\\ILSVRC2012_val_00010931.JPEG''0']
+        # ['F:/Summer_Project_Technion/Tasks/NeuralGroupTesting/data/group_testing_dataset\\1\\val\\n04447861\\ILSVRC2012_val_00001621.JPEG''0']
+        # ['F:/Summer_Project_Technion/Tasks/NeuralGroupTesting/data/group_testing_dataset\\1\\val\\n02134418\\ILSVRC2012_val_00038825.JPEG''0']]
 
-        ################################## 
-        # Reshape the list 
-        ##################################   
-        # print("shuffled_mixing_data_list", shuffled_mixing_data_list.shape)
-        self.dataset_samples = np.array(shuffled_mixing_data_list).reshape( 
-            len(shuffled_mixing_data_list)//(self.background_K + 1), 
-            self.background_K + 1, 
+        ##################################
+        
+
+        # Your current list size and desired shape components
+        list_size = len(shuffled_mixing_data_list)
+        background_K_plus_1 = self.background_K + 1
+        reshape_size = background_K_plus_1 * 2
+
+        # Calculate the maximum size divisible by (self.background_K + 1) * 2
+        max_reshape_length = (list_size // reshape_size) * reshape_size
+        print("Tang: max_reshape_length is {}\n".format(max_reshape_length))
+
+        # Trim the list to this size
+        shuffled_mixing_data_list = np.array(shuffled_mixing_data_list[:max_reshape_length])
+
+        
+        self.dataset_samples = np.array(shuffled_mixing_data_list).reshape(
+            len(shuffled_mixing_data_list)//(self.background_K + 1),
+            self.background_K + 1,
             2
-        ).transpose((1,0,2))
+        ).transpose((1, 0, 2))
 
-
-        # print("self.dataset_samples", self.dataset_samples.shape)      
-        # print("self.dataset_samples[:,x]", self.dataset_samples[:,37])        
+        # print("self.dataset_samples", self.dataset_samples.shape)
+        # print("self.dataset_samples[:,x]", self.dataset_samples[:,37])
         # print("EXIT")
         # exit(0)
         # print("self.dataset_samples", self.dataset_samples)
 
-        ################################## 
-        # Dump the group testing schedule 
-        ##################################   
-        with open(os.path.join( args.output_dir, 'val_schedule.npy'), "wb") as npy_file:
+        ##################################
+        # Dump the group testing schedule
+        ##################################
+        with open(os.path.join(args.output_dir, 'val_schedule.npy'), "wb") as npy_file:
             np.save(npy_file, self.dataset_samples)
-
 
     def __getitem__(self, index):
         """
@@ -936,22 +1028,24 @@ class GroupTestDataset_val(torch.utils.data.Dataset):
         # load T images
         ##################################
 
-        superimposed_images = 0 
+        superimposed_images = 0
         mixing_folder_idx = 0
-        target = int(self.dataset_samples[mixing_folder_idx][index][1]) # (path, target) 
+        # (path, target)
+        target = int(self.dataset_samples[mixing_folder_idx][index][1])
 
         images_for_stack_list = []
-        for folder_idx in range(self.background_K + 1): 
-        # for folder_idx in [0]: 
+        for folder_idx in range(self.background_K + 1):
+            # for folder_idx in [0]:
             path, target_this = self.dataset_samples[folder_idx][index]
-            target = target or int(target_this) # Note: need to construct each target for group testing right now 
+            # Note: need to construct each target for group testing right now
+            target = target or int(target_this)
             sample = self.loader(path)
             sample = self.transform(sample)
             images_for_stack_list.append(sample)
 
-        # superimposed_images = superimposed_images / (self.background_K + 1) 
+        # superimposed_images = superimposed_images / (self.background_K + 1)
         superimposed_images = torch.stack(images_for_stack_list)
-        
+
         return superimposed_images, target
 
     def __len__(self):
